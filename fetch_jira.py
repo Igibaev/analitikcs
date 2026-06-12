@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from requests.auth import HTTPBasicAuth
 
 from config import Config
 
@@ -20,15 +19,7 @@ class JiraClient:
         self.cfg = cfg
         self.session = requests.Session()
         self.session.headers["Accept"] = "application/json"
-
-        # Jira Server/DC: if JIRA_USER is empty → Bearer PAT token
-        # Jira Server/DC: if JIRA_USER is set   → Basic auth (user:password)
-        if cfg.jira_user:
-            self.session.auth = HTTPBasicAuth(cfg.jira_user, cfg.jira_token)
-            print(f"[jira] auth: Basic ({cfg.jira_user})")
-        else:
-            self.session.headers["Authorization"] = f"Bearer {cfg.jira_token}"
-            print("[jira] auth: Bearer PAT")
+        self.session.headers["Authorization"] = f"Bearer {cfg.jira_token}"
 
         Path(cfg.cache_dir).mkdir(exist_ok=True)
 

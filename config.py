@@ -9,7 +9,6 @@ load_dotenv()
 class Config:
     # Jira
     jira_url: str = field(default_factory=lambda: os.environ["JIRA_URL"].rstrip("/"))
-    jira_user: str = field(default_factory=lambda: os.environ["JIRA_USER"])
     jira_token: str = field(default_factory=lambda: os.environ["JIRA_TOKEN"])
     # Project for QBS tasks (issues by status)
     jira_project: str = field(default_factory=lambda: os.environ.get("JIRA_PROJECT", "QBS"))
