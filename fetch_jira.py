@@ -80,19 +80,16 @@ class JiraClient:
         return None
 
     def get_epics(self, period: str, start: str, end: str) -> list[dict]:
-        """Return epics for the project/team updated in the given date range."""
+        """Return epics from QPAY filtered by Team Link key, excluding 'Потеря'."""
         cache_key = f"epics_{period}"
         cached = self._load_cache(cache_key)
         if cached is not None:
             print(f"[jira] epics {period}: loaded from cache ({len(cached)} items)")
             return cached
 
-        jql = self._build_jql("Epic", start, end)
-        fields = [
-            "summary", "status", "created", "resolutiondate",
-            "assignee", "priority", "subtasks",
-            self.cfg.jira_team_field,
-        ]
+        jql = self._build_epics_jql(start, end)
+        fields = ["summary", "status", "created", "resolutiondate",
+                  "assignee", "priority", "subtasks"]
         raw = self._search(jql, fields)
         epics = [self._parse_epic(i) for i in raw]
         self._save_cache(cache_key, epics)
@@ -100,20 +97,16 @@ class JiraClient:
         return epics
 
     def get_issues(self, period: str, start: str, end: str) -> list[dict]:
-        """Return all issues (all types) for the project/team updated in the date range."""
+        """Return all issue types from QBS project updated in the date range."""
         cache_key = f"issues_{period}"
         cached = self._load_cache(cache_key)
         if cached is not None:
             print(f"[jira] issues {period}: loaded from cache ({len(cached)} items)")
             return cached
 
-        jql = self._build_jql(None, start, end)
-        fields = [
-            "summary", "issuetype", "status", "created", "resolutiondate",
-            "assignee", "priority", "customfield_10014",  # epic link (classic)
-            "parent",                                      # epic link (next-gen)
-            self.cfg.jira_team_field,
-        ]
+        jql = self._build_issues_jql(start, end)
+        fields = ["summary", "issuetype", "status", "created", "resolutiondate",
+                  "assignee", "priority", "customfield_10014", "parent"]
         raw = self._search(jql, fields)
         issues = [self._parse_issue(i) for i in raw]
         self._save_cache(cache_key, issues)
@@ -139,20 +132,28 @@ class JiraClient:
 
     # ── helpers ────────────────────────────────────────────────────────────────
 
-    def _build_jql(self, issue_types: str | None, start: str, end: str) -> str:
+    def _build_epics_jql(self, start: str, end: str) -> str:
+        parts = [
+            f'project = "{self.cfg.jira_epics_project}"',
+            'issuetype = Epic',
+            "issuetype != 'Потеря'",
+            f'updated >= "{start}"',
+            f'updated <= "{end}"',
+        ]
+        if self.cfg.jira_team_key:
+            parts.append(f'"Team Link" = "{self.cfg.jira_team_key}"')
+        jql = " AND ".join(parts) + " ORDER BY updated ASC"
+        print(f"[jira] epics JQL: {jql}")
+        return jql
+
+    def _build_issues_jql(self, start: str, end: str) -> str:
         parts = [
             f'project = "{self.cfg.jira_project}"',
             f'updated >= "{start}"',
             f'updated <= "{end}"',
         ]
-        if issue_types:
-            parts.append(f'issuetype in ({issue_types})')
-        if self.cfg.jira_team_value and self.cfg.jira_team_field:
-            parts.append(
-                f'"Team Link" = "{self.cfg.jira_team_value}"'
-            )
         jql = " AND ".join(parts) + " ORDER BY updated ASC"
-        print(f"[jira] JQL: {jql}")
+        print(f"[jira] issues JQL: {jql}")
         return jql
 
     def _parse_epic(self, raw: dict) -> dict:

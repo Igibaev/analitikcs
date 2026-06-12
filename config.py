@@ -11,9 +11,12 @@ class Config:
     jira_url: str = field(default_factory=lambda: os.environ["JIRA_URL"].rstrip("/"))
     jira_user: str = field(default_factory=lambda: os.environ["JIRA_USER"])
     jira_token: str = field(default_factory=lambda: os.environ["JIRA_TOKEN"])
+    # Project for QBS tasks (issues by status)
     jira_project: str = field(default_factory=lambda: os.environ.get("JIRA_PROJECT", "QBS"))
-    jira_team_field: str = field(default_factory=lambda: os.environ.get("JIRA_TEAM_FIELD", ""))
-    jira_team_value: str = field(default_factory=lambda: os.environ.get("JIRA_TEAM_VALUE", ""))
+    # Project for epics
+    jira_epics_project: str = field(default_factory=lambda: os.environ.get("JIRA_EPICS_PROJECT", "QPAY"))
+    # Team Link field: key of the team (used in epics filter)
+    jira_team_key: str = field(default_factory=lambda: os.environ.get("JIRA_TEAM_KEY", ""))
 
     # GitLab
     gitlab_url: str = field(default_factory=lambda: os.environ["GITLAB_URL"].rstrip("/"))
