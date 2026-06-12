@@ -150,7 +150,9 @@ class JiraClient:
             parts.append(
                 f'"{self.cfg.jira_team_field}" = "{self.cfg.jira_team_value}"'
             )
-        return " AND ".join(parts) + " ORDER BY created ASC"
+        jql = " AND ".join(parts) + " ORDER BY created ASC"
+        print(f"[jira] JQL: {jql}")
+        return jql
 
     def _parse_epic(self, raw: dict) -> dict:
         fields = raw["fields"]
