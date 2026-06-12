@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Claude Code Impact Analysis</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -171,59 +172,47 @@
     .delta-pos { color: #4ade80; }
     .delta-neg { color: #f87171; }
 
-    /* Developer table */
-    .dev-grid {
+    /* QBS status table */
+    .qbs-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr 1.6fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .status-table th {
+      text-align: left;
+      color: #64748b;
+      font-weight: 600;
+      padding: 8px 10px;
+      border-bottom: 1px solid #2d3748;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .status-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #1a2035;
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+    .status-table tr:hover td { background: #1e2850; }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      display: inline-block; margin-right: 7px; vertical-align: middle;
+    }
+    .cycle-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .cycle-bar-bg { flex: 1; height: 6px; background: #1a2035; border-radius: 3px; overflow: hidden; }
+    .cycle-bar-fill { height: 6px; border-radius: 3px; }
+    .qbs-kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
       margin-bottom: 16px;
     }
-    .dev-card {
-      background: #161b2e;
-      border: 1px solid #2d3748;
-      border-radius: 10px;
-      padding: 16px;
-    }
-    .dev-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-    .avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700; color: #fff;
-      flex-shrink: 0;
-    }
-    .dev-name { font-size: 14px; font-weight: 600; color: #fff; }
-    .dev-role { font-size: 11px; color: #64748b; }
-    .dev-metrics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .metric-box {
-      background: #0f1420;
-      border-radius: 6px;
-      padding: 8px;
-      text-align: center;
-    }
-    .metric-box .m-label { font-size: 10px; color: #64748b; margin-bottom: 3px; }
-    .metric-box .m-val { font-size: 14px; font-weight: 700; color: #fff; }
-    .metric-box .m-delta { font-size: 10px; margin-top: 2px; }
-
-    /* Review time bar */
-    .review-bar-wrap { margin-bottom: 16px; }
-    .review-row {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 8px; font-size: 12px;
-    }
-    .review-row .name { width: 110px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-bg { flex: 1; height: 8px; background: #1a2035; border-radius: 4px; overflow: hidden; }
-    .bar-q1 { height: 8px; border-radius: 4px; background: #f87171; transition: width 0.4s; }
-    .bar-q2 { height: 8px; border-radius: 4px; background: #4ade80; transition: width 0.4s; margin-top: 2px; }
-    .review-val { width: 50px; text-align: right; color: #e2e8f0; font-weight: 600; }
 
     /* Comment sentiment */
     .sentiment-row {
@@ -390,218 +379,162 @@
     </tbody>
   </table>
 
-  <!-- Developer section -->
-  <div class="section-title"><span class="icon">👥</span>По разработчикам и тестировщикам</div>
-  <div class="dev-grid">
+  <!-- QBS Section -->
+  <div class="section-title"><span class="icon">🧪</span>QBS — Аналитика задач по статусам</div>
 
-    <div class="dev-card">
-      <div class="dev-header">
-        <div class="avatar" style="background:#6366f1;">AI</div>
-        <div>
-          <div class="dev-name">Alexei Ivanov</div>
-          <div class="dev-role">Backend Developer</div>
-        </div>
-      </div>
-      <div class="dev-metrics">
-        <div class="metric-box">
-          <div class="m-label">MR / неделю</div>
-          <div class="m-val">3.8</div>
-          <div class="m-delta delta-pos">+1.4 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Размер MR</div>
-          <div class="m-val">162</div>
-          <div class="m-delta delta-pos">−119 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Коммитов/нед</div>
-          <div class="m-val">11</div>
-          <div class="m-delta delta-pos">+4 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Время ревью</div>
-          <div class="m-val">3.8ч</div>
-          <div class="m-delta delta-pos">−4.1ч ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Review Score</div>
-          <div class="m-val">4.2</div>
-          <div class="m-delta delta-pos">+0.9 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Замечания</div>
-          <div class="m-val">1.1</div>
-          <div class="m-delta delta-pos">−2.3 ▲</div>
-        </div>
-      </div>
+  <!-- QBS KPI -->
+  <div class="qbs-kpi-strip">
+    <div class="kpi">
+      <div class="kpi-label">Всего задач QBS</div>
+      <div class="kpi-val">214</div>
+      <div class="kpi-delta up">▲ +62 vs Q1 (152)</div>
     </div>
-
-    <div class="dev-card">
-      <div class="dev-header">
-        <div class="avatar" style="background:#0891b2;">МС</div>
-        <div>
-          <div class="dev-name">Maria Sokolova</div>
-          <div class="dev-role">Backend Developer</div>
-        </div>
-      </div>
-      <div class="dev-metrics">
-        <div class="metric-box">
-          <div class="m-label">MR / неделю</div>
-          <div class="m-val">4.2</div>
-          <div class="m-delta delta-pos">+1.8 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Размер MR</div>
-          <div class="m-val">201</div>
-          <div class="m-delta delta-pos">−88 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Коммитов/нед</div>
-          <div class="m-val">13</div>
-          <div class="m-delta delta-pos">+5 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Время ревью</div>
-          <div class="m-val">4.5ч</div>
-          <div class="m-delta delta-pos">−2.8ч ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Review Score</div>
-          <div class="m-val">3.9</div>
-          <div class="m-delta delta-pos">+0.7 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Замечания</div>
-          <div class="m-val">1.8</div>
-          <div class="m-delta delta-pos">−1.6 ▲</div>
-        </div>
-      </div>
+    <div class="kpi">
+      <div class="kpi-label">Done rate</div>
+      <div class="kpi-val">78%</div>
+      <div class="kpi-delta up">▲ +19pp vs Q1 (59%)</div>
     </div>
-
-    <div class="dev-card">
-      <div class="dev-header">
-        <div class="avatar" style="background:#16a34a;">ДК</div>
-        <div>
-          <div class="dev-name">Dmitry Kovalev</div>
-          <div class="dev-role">Frontend Developer</div>
-        </div>
-      </div>
-      <div class="dev-metrics">
-        <div class="metric-box">
-          <div class="m-label">MR / неделю</div>
-          <div class="m-val">2.9</div>
-          <div class="m-delta delta-pos">+0.8 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Размер MR</div>
-          <div class="m-val">174</div>
-          <div class="m-delta delta-pos">−102 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Коммитов/нед</div>
-          <div class="m-val">9</div>
-          <div class="m-delta delta-pos">+2 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Время ревью</div>
-          <div class="m-val">5.1ч</div>
-          <div class="m-delta delta-neg">+0.4ч ▼</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Review Score</div>
-          <div class="m-val">3.6</div>
-          <div class="m-delta delta-pos">+0.4 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Замечания</div>
-          <div class="m-val">2.4</div>
-          <div class="m-delta delta-pos">−0.9 ▲</div>
-        </div>
-      </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg cycle time</div>
+      <div class="kpi-val">4.8д</div>
+      <div class="kpi-delta up">▼ −2.3д vs Q1 (7.1д)</div>
     </div>
-
-    <div class="dev-card">
-      <div class="dev-header">
-        <div class="avatar" style="background:#dc2626;">ОН</div>
-        <div>
-          <div class="dev-name">Olga Nikitina</div>
-          <div class="dev-role">QA Engineer</div>
-        </div>
-      </div>
-      <div class="dev-metrics">
-        <div class="metric-box">
-          <div class="m-label">MR Reviewed</div>
-          <div class="m-val">28</div>
-          <div class="m-delta delta-pos">+9 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Время ревью</div>
-          <div class="m-val">3.2ч</div>
-          <div class="m-delta delta-pos">−2.1ч ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Bug catch rate</div>
-          <div class="m-val">91%</div>
-          <div class="m-delta delta-pos">+8% ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Комментарии</div>
-          <div class="m-val">2.1</div>
-          <div class="m-delta delta-pos">−1.8 ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Reopen rate</div>
-          <div class="m-val">4%</div>
-          <div class="m-delta delta-pos">−9% ▲</div>
-        </div>
-        <div class="metric-box">
-          <div class="m-label">Test coverage</div>
-          <div class="m-val">84%</div>
-          <div class="m-delta delta-pos">+12% ▲</div>
-        </div>
-      </div>
+    <div class="kpi">
+      <div class="kpi-label">Reopened / Blocked</div>
+      <div class="kpi-val">6</div>
+      <div class="kpi-delta up">▼ −14 vs Q1 (20)</div>
     </div>
-
   </div>
 
-  <!-- Review time bars -->
-  <div class="section-title"><span class="icon">⏱</span>Время ревью по участникам (ч)</div>
-  <div class="legend">
-    <span><div class="legend-dot" style="background:#f87171;"></div> Q1 (без Claude Code)</span>
-    <span><div class="legend-dot" style="background:#4ade80;"></div> Q2 (с Claude Code)</span>
+  <!-- QBS main grid: donuts + stacked bar -->
+  <div class="qbs-grid">
+
+    <!-- Donuts -->
+    <div class="chart-card" style="display:flex;flex-direction:column;gap:12px;">
+      <h3>Распределение по статусам</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;">
+        <div>
+          <div style="font-size:11px;color:#64748b;text-align:center;margin-bottom:6px;">Q1 (без CC)</div>
+          <div style="position:relative;height:150px;"><canvas id="donutQ1"></canvas></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#64748b;text-align:center;margin-bottom:6px;">Q2 (с CC)</div>
+          <div style="position:relative;height:150px;"><canvas id="donutQ2"></canvas></div>
+        </div>
+      </div>
+      <!-- Legend -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:#94a3b8;">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#4ade80;margin-right:4px;"></span>Done</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#60a5fa;margin-right:4px;"></span>In Progress</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#a78bfa;margin-right:4px;"></span>In Review</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#fbbf24;margin-right:4px;"></span>Testing</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#64748b;margin-right:4px;"></span>To Do</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f87171;margin-right:4px;"></span>Blocked</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#fb923c;margin-right:4px;"></span>Reopened</span>
+      </div>
+    </div>
+
+    <!-- Stacked bar по месяцам -->
+    <div class="chart-card">
+      <h3>Задачи по статусам — помесячно Q1→Q2</h3>
+      <div class="chart-wrap" style="height:240px;"><canvas id="qbsStackedBar"></canvas></div>
+    </div>
   </div>
-  <div class="review-bar-wrap">
-    <div class="review-row">
-      <div class="name">A. Ivanov</div>
-      <div style="flex:1">
-        <div class="bar-bg"><div class="bar-q1" style="width:79%;"></div></div>
-        <div class="bar-bg" style="margin-top:3px"><div class="bar-q2" style="width:38%;"></div></div>
-      </div>
-      <div class="review-val">7.9 → 3.8</div>
+
+  <!-- Status breakdown table -->
+  <div class="chart-card" style="margin-bottom:16px;">
+    <h3 style="margin-bottom:14px;">Детализация по статусам — Q1 vs Q2</h3>
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>Статус</th>
+          <th>Q1 задач</th>
+          <th>Q1 %</th>
+          <th>Q2 задач</th>
+          <th>Q2 %</th>
+          <th>Δ задач</th>
+          <th>Avg cycle time Q1</th>
+          <th>Avg cycle time Q2</th>
+          <th>Δ cycle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="status-dot" style="background:#4ade80;"></span>Done</td>
+          <td>90</td><td>59%</td>
+          <td>167</td><td>78%</td>
+          <td class="delta-cell delta-pos">+77 ▲</td>
+          <td>7.1д</td><td>4.8д</td>
+          <td class="delta-cell delta-pos">−2.3д ▲</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot" style="background:#fbbf24;"></span>Testing</td>
+          <td>18</td><td>12%</td>
+          <td>17</td><td>8%</td>
+          <td class="delta-cell neutral">−1</td>
+          <td>3.4д</td><td>2.1д</td>
+          <td class="delta-cell delta-pos">−1.3д ▲</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot" style="background:#a78bfa;"></span>In Review</td>
+          <td>14</td><td>9%</td>
+          <td>12</td><td>6%</td>
+          <td class="delta-cell delta-pos">−2 ▲</td>
+          <td>2.8д</td><td>1.4д</td>
+          <td class="delta-cell delta-pos">−1.4д ▲</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot" style="background:#60a5fa;"></span>In Progress</td>
+          <td>16</td><td>11%</td>
+          <td>12</td><td>6%</td>
+          <td class="delta-cell delta-pos">−4 ▲</td>
+          <td>—</td><td>—</td>
+          <td class="delta-cell neutral">—</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot" style="background:#64748b;"></span>To Do</td>
+          <td>14</td><td>9%</td>
+          <td>6</td><td>3%</td>
+          <td class="delta-cell delta-pos">−8 ▲</td>
+          <td>—</td><td>—</td>
+          <td class="delta-cell neutral">—</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot" style="background:#f87171;"></span>Blocked</td>
+          <td>12</td><td>8%</td>
+          <td>4</td><td>2%</td>
+          <td class="delta-cell delta-pos">−8 ▲</td>
+          <td>11.2д</td><td>6.5д</td>
+          <td class="delta-cell delta-pos">−4.7д ▲</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot" style="background:#fb923c;"></span>Reopened</td>
+          <td>8</td><td>5%</td>
+          <td>2</td><td>1%</td>
+          <td class="delta-cell delta-pos">−6 ▲</td>
+          <td>9.4д</td><td>5.2д</td>
+          <td class="delta-cell delta-pos">−4.2д ▲</td>
+        </tr>
+        <tr style="background:#0f1420;font-weight:700;">
+          <td>Итого</td>
+          <td>152</td><td>100%</td>
+          <td>214</td><td>100%</td>
+          <td class="delta-cell delta-pos">+62</td>
+          <td colspan="3" style="color:#64748b;font-weight:400;font-size:11px;">Cycle time считается только по закрытым задачам</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cycle time per status bar chart -->
+  <div class="charts-row" style="margin-bottom:16px;">
+    <div class="chart-card">
+      <h3>Среднее время в статусе (дней) — Q1 vs Q2</h3>
+      <div class="chart-wrap" style="height:220px;"><canvas id="cycleTimeChart"></canvas></div>
     </div>
-    <div class="review-row">
-      <div class="name">M. Sokolova</div>
-      <div style="flex:1">
-        <div class="bar-bg"><div class="bar-q1" style="width:73%;"></div></div>
-        <div class="bar-bg" style="margin-top:3px"><div class="bar-q2" style="width:45%;"></div></div>
-      </div>
-      <div class="review-val">7.3 → 4.5</div>
-    </div>
-    <div class="review-row">
-      <div class="name">D. Kovalev</div>
-      <div style="flex:1">
-        <div class="bar-bg"><div class="bar-q1" style="width:47%;"></div></div>
-        <div class="bar-bg" style="margin-top:3px"><div class="bar-q2" style="width:51%;"></div></div>
-      </div>
-      <div class="review-val">4.7 → 5.1</div>
-    </div>
-    <div class="review-row">
-      <div class="name">O. Nikitina (QA)</div>
-      <div style="flex:1">
-        <div class="bar-bg"><div class="bar-q1" style="width:53%;"></div></div>
-        <div class="bar-bg" style="margin-top:3px"><div class="bar-q2" style="width:32%;"></div></div>
-      </div>
-      <div class="review-val">5.3 → 3.2</div>
+    <div class="chart-card">
+      <h3>Blocked & Reopened задачи по месяцам</h3>
+      <div class="chart-wrap" style="height:220px;"><canvas id="blockedChart"></canvas></div>
     </div>
   </div>
 
@@ -661,62 +594,137 @@
 </div>
 
 <script>
+  const darkScales = {
+    x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } },
+    y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } }
+  };
+
   // Commit chart
-  const commitCtx = document.getElementById('commitChart').getContext('2d');
-  new Chart(commitCtx, {
+  new Chart(document.getElementById('commitChart'), {
     type: 'line',
     data: {
       labels: ['Н1','Н2','Н3','Н4','Н5','Н6','Н7','Н8','Н9','Н10','Н11','Н12'],
       datasets: [
-        {
-          label: 'Q1 (без CC)',
-          data: [22, 25, 24, 27, 26, 29, 28, 30, 27, 25, 28, 27],
-          borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)',
-          tension: 0.4, fill: true, pointRadius: 3,
-        },
-        {
-          label: 'Q2 (с CC)',
-          data: [28, 31, 34, 37, 36, 40, 38, 42, 41, 38, 39, 43],
-          borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)',
-          tension: 0.4, fill: true, pointRadius: 3,
-        }
+        { label: 'Q1 (без CC)', data: [22,25,24,27,26,29,28,30,27,25,28,27],
+          borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', tension: 0.4, fill: true, pointRadius: 3 },
+        { label: 'Q2 (с CC)', data: [28,31,34,37,36,40,38,42,41,38,39,43],
+          borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)', tension: 0.4, fill: true, pointRadius: 3 }
       ]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
-      scales: {
-        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } },
-        y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } }
-      }
-    }
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: darkScales }
   });
 
   // MR size chart
-  const mrCtx = document.getElementById('mrSizeChart').getContext('2d');
-  new Chart(mrCtx, {
+  new Chart(document.getElementById('mrSizeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+      datasets: [{
+        label: 'Размер MR (строк)',
+        data: [290,275,278,210,185,168],
+        backgroundColor: ['rgba(248,113,113,0.7)','rgba(248,113,113,0.7)','rgba(248,113,113,0.7)',
+                          'rgba(74,222,128,0.7)','rgba(74,222,128,0.7)','rgba(74,222,128,0.7)'],
+        borderRadius: 4
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } }, scales: darkScales }
+  });
+
+  // --- QBS Charts ---
+  const statusColors = ['#4ade80','#60a5fa','#a78bfa','#fbbf24','#64748b','#f87171','#fb923c'];
+  const statusLabels = ['Done','In Progress','In Review','Testing','To Do','Blocked','Reopened'];
+
+  // Donut Q1
+  new Chart(document.getElementById('donutQ1'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{ data: [90,16,14,18,14,12,8], backgroundColor: statusColors, borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw} (${Math.round(c.raw/152*100)}%)` } } } }
+  });
+
+  // Donut Q2
+  new Chart(document.getElementById('donutQ2'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{ data: [167,12,12,17,6,4,2], backgroundColor: statusColors, borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw} (${Math.round(c.raw/214*100)}%)` } } } }
+  });
+
+  // Stacked bar по месяцам
+  new Chart(document.getElementById('qbsStackedBar'), {
     type: 'bar',
     data: {
       labels: ['Jan','Feb','Mar','Apr','May','Jun'],
       datasets: [
-        {
-          label: 'Размер MR (строк)',
-          data: [290, 275, 278, 210, 185, 168],
-          backgroundColor: (ctx) => ctx.dataIndex < 3 ? 'rgba(248,113,113,0.7)' : 'rgba(74,222,128,0.7)',
-          borderRadius: 4,
-        }
+        { label: 'Done',        data: [27,32,31,48,58,61], backgroundColor: '#4ade80', stack: 's' },
+        { label: 'In Progress', data: [5,6,5,5,4,3],       backgroundColor: '#60a5fa', stack: 's' },
+        { label: 'In Review',   data: [4,5,5,5,4,3],       backgroundColor: '#a78bfa', stack: 's' },
+        { label: 'Testing',     data: [6,6,6,6,6,5],       backgroundColor: '#fbbf24', stack: 's' },
+        { label: 'To Do',       data: [5,5,4,3,2,1],       backgroundColor: '#64748b', stack: 's' },
+        { label: 'Blocked',     data: [4,4,4,2,1,1],       backgroundColor: '#f87171', stack: 's' },
+        { label: 'Reopened',    data: [3,3,2,1,1,0],       backgroundColor: '#fb923c', stack: 's' },
       ]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        annotation: {}
-      },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } },
       scales: {
-        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#1e2a40' } },
-        y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#1e2a40' } }
+        x: { stacked: true, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } },
+        y: { stacked: true, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } }
       }
+    }
+  });
+
+  // Cycle time grouped bar
+  new Chart(document.getElementById('cycleTimeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Done','Testing','In Review','Blocked','Reopened'],
+      datasets: [
+        { label: 'Q1', data: [7.1,3.4,2.8,11.2,9.4], backgroundColor: 'rgba(248,113,113,0.75)', borderRadius: 4 },
+        { label: 'Q2', data: [4.8,2.1,1.4,6.5,5.2],  backgroundColor: 'rgba(74,222,128,0.75)',  borderRadius: 4 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e2a40' } },
+        y: { ticks: { color: '#64748b', font: { size: 10 }, callback: v => v+'д' }, grid: { color: '#1e2a40' } }
+      }
+    }
+  });
+
+  // Blocked & Reopened trend
+  new Chart(document.getElementById('blockedChart'), {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+      datasets: [
+        { label: 'Blocked Q1/Q2', data: [4,4,4,2,1,1],
+          borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.15)', tension: 0.4, fill: true, pointRadius: 4 },
+        { label: 'Reopened Q1/Q2', data: [3,3,2,1,1,0],
+          borderColor: '#fb923c', backgroundColor: 'rgba(251,146,60,0.15)', tension: 0.4, fill: true, pointRadius: 4 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+        annotation: { annotations: {
+          line1: { type: 'line', xMin: 2.5, xMax: 2.5, borderColor: '#e88c30', borderWidth: 1.5,
+            borderDash: [4,4], label: { content: 'Claude Code →', enabled: true, color: '#e88c30',
+            font: { size: 10 }, position: 'start' } }
+        }}
+      },
+      scales: darkScales
     }
   });
 </script>
