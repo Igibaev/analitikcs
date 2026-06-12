@@ -149,8 +149,7 @@ class JiraClient:
     def _build_issues_jql(self, start: str, end: str) -> str:
         parts = [
             f'project = "{self.cfg.jira_project}"',
-            f'updated >= "{start}"',
-            f'updated <= "{end}"',
+            f'status was "In Dev" DURING ("{start}", "{end}")',
         ]
         jql = " AND ".join(parts) + " ORDER BY updated ASC"
         print(f"[jira] issues JQL: {jql}")
