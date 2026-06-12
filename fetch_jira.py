@@ -80,7 +80,7 @@ class JiraClient:
         return None
 
     def get_epics(self, period: str, start: str, end: str) -> list[dict]:
-        """Return epics for the project/team in the given date range."""
+        """Return epics for the project/team updated in the given date range."""
         cache_key = f"epics_{period}"
         cached = self._load_cache(cache_key)
         if cached is not None:
@@ -100,14 +100,14 @@ class JiraClient:
         return epics
 
     def get_issues(self, period: str, start: str, end: str) -> list[dict]:
-        """Return all non-epic issues for the project/team in the date range."""
+        """Return all issues (all types) for the project/team updated in the date range."""
         cache_key = f"issues_{period}"
         cached = self._load_cache(cache_key)
         if cached is not None:
             print(f"[jira] issues {period}: loaded from cache ({len(cached)} items)")
             return cached
 
-        jql = self._build_jql("Story,Task,Bug,Sub-task", start, end)
+        jql = self._build_jql(None, start, end)
         fields = [
             "summary", "issuetype", "status", "created", "resolutiondate",
             "assignee", "priority", "customfield_10014",  # epic link (classic)
@@ -139,18 +139,19 @@ class JiraClient:
 
     # ── helpers ────────────────────────────────────────────────────────────────
 
-    def _build_jql(self, issue_types: str, start: str, end: str) -> str:
+    def _build_jql(self, issue_types: str | None, start: str, end: str) -> str:
         parts = [
             f'project = "{self.cfg.jira_project}"',
-            f'issuetype in ({issue_types})',
-            f'created >= "{start}"',
-            f'created <= "{end}"',
+            f'updated >= "{start}"',
+            f'updated <= "{end}"',
         ]
+        if issue_types:
+            parts.append(f'issuetype in ({issue_types})')
         if self.cfg.jira_team_value and self.cfg.jira_team_field:
             parts.append(
-                f'"{self.cfg.jira_team_field}" = "{self.cfg.jira_team_value}"'
+                f'"Team Link" = "{self.cfg.jira_team_value}"'
             )
-        jql = " AND ".join(parts) + " ORDER BY created ASC"
+        jql = " AND ".join(parts) + " ORDER BY updated ASC"
         print(f"[jira] JQL: {jql}")
         return jql
 
