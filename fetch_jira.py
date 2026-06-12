@@ -17,11 +17,19 @@ from config import Config
 class JiraClient:
     def __init__(self, cfg: Config):
         self.base = cfg.jira_url
-        self.auth = HTTPBasicAuth(cfg.jira_user, cfg.jira_token)
         self.cfg = cfg
         self.session = requests.Session()
-        self.session.auth = self.auth
         self.session.headers["Accept"] = "application/json"
+
+        # Jira Server/DC: if JIRA_USER is empty → Bearer PAT token
+        # Jira Server/DC: if JIRA_USER is set   → Basic auth (user:password)
+        if cfg.jira_user:
+            self.session.auth = HTTPBasicAuth(cfg.jira_user, cfg.jira_token)
+            print(f"[jira] auth: Basic ({cfg.jira_user})")
+        else:
+            self.session.headers["Authorization"] = f"Bearer {cfg.jira_token}"
+            print("[jira] auth: Bearer PAT")
+
         Path(cfg.cache_dir).mkdir(exist_ok=True)
 
     # ── low-level ──────────────────────────────────────────────────────────────
