@@ -1,86 +1,63 @@
 # Claude Code Impact Dashboard
 
-Анализирует влияние Claude Code на команду, сравнивая Q1 (без CC) и Q2 (с CC).
+Сравнивает команду Q1 (без Claude Code) и Q2 (с Claude Code).  
+Источники данных: **Jira** (эпики + задачи по статусам) + **GitLab** (MR, коммиты, комментарии к ревью).
 
 ## Быстрый старт
 
-### 1. Установить зависимости
 ```bash
 pip install -r requirements.txt
-```
-
-### 2. Настроить окружение
-```bash
 cp .env.example .env
-# Заполни JIRA_URL, JIRA_USER, JIRA_TOKEN, GITLAB_URL, GITLAB_TOKEN
+# Заполни .env — см. таблицу ниже
+python main.py
+# → открыть dashboard.html в браузере
 ```
 
-### 3. Найти ID кастомного поля Team Link
-```bash
-python main.py --find-fields | grep -i team
-# Скопируй нужный customfield_XXXXX в .env → JIRA_TEAM_FIELD
-```
-
-### 4. Добавить участников команды
-
-Открой `config.py` и заполни список `TEAM_MEMBERS`:
-
-```python
-TEAM_MEMBERS = [
-    Member(
-        name="Ivan Petrov",
-        role="dev",                         # "dev" или "qa"
-        jira_account_id="5f3eabc...",       # из Jira URL профиля
-        gitlab_username="ivan.petrov",
-        color="#6366f1",                    # цвет аватара
-    ),
-]
-```
-
-**Как найти Jira accountId:**
-- Открой профиль пользователя в Jira
-- В URL будет: `.../jira/people/<accountId>`
-
-**Как найти GitLab username:**
-- Логин пользователя в GitLab (не email)
-
-### 5. Запустить
-```bash
-python main.py                  # генерирует dashboard.html
-python main.py --no-cache       # сбросить кэш и перефетчить
-python main.py --output my.html # кастомное имя файла
-```
-
-## Переменные окружения
+## Настройка .env
 
 | Переменная | Обязательная | Описание |
 |---|---|---|
-| `JIRA_URL` | ✓ | Базовый URL Jira, напр. `https://jira.corp.com` |
-| `JIRA_USER` | ✓ | Email для аутентификации |
-| `JIRA_TOKEN` | ✓ | API-токен (Settings → Security → API tokens) |
+| `JIRA_URL` | ✓ | `https://jira.corp.com` |
+| `JIRA_USER` | ✓ | Email для Basic Auth |
+| `JIRA_TOKEN` | ✓ | Jira API token |
 | `JIRA_PROJECT` | ✓ | Project key, напр. `QBS` |
-| `JIRA_TEAM_FIELD` | — | ID кастомного поля Team, напр. `customfield_10100` |
+| `JIRA_TEAM_FIELD` | — | ID кастомного поля команды (найти: `python main.py --find-fields`) |
 | `JIRA_TEAM_VALUE` | — | Значение фильтра, напр. `Backend Core` |
-| `GITLAB_URL` | ✓ | Базовый URL GitLab, напр. `https://gitlab.corp.com` |
-| `GITLAB_TOKEN` | ✓ | Personal Access Token (scopes: `read_api`) |
+| `GITLAB_URL` | ✓ | `https://gitlab.corp.com` |
+| `GITLAB_TOKEN` | ✓ | Personal Access Token (scope: `read_api`) |
 | `GITLAB_GROUP` | ✓ | Путь группы, напр. `company/backend` |
+| `GITLAB_USERNAMES` | ✓ | Юзернеймы GitLab через запятую: `ivan.petrov,anna.sidorova` |
 | `Q1_START` / `Q1_END` | — | Период Q1 (default: 2025-01-01 / 2025-03-31) |
 | `Q2_START` / `Q2_END` | — | Период Q2 (default: 2025-04-01 / 2025-06-30) |
 
+## Полезные команды
+
+```bash
+# Найти ID кастомного поля "Team Link" в Jira
+python main.py --find-fields | grep -i team
+
+# Сбросить кэш и перефетчить данные заново
+python main.py --no-cache
+
+# Кастомное имя выходного файла
+python main.py --output my_report.html
+```
+
 ## Кэш
 
-Все API-ответы кэшируются в `.cache/` в виде JSON.  
-При изменении состава команды или периодов — запусти `--no-cache`.
+Все ответы API сохраняются в `.cache/` (JSON).  
+Повторный запуск использует кэш — без новых API-запросов.  
+При изменении состава команды или периодов запусти `--no-cache`.
 
-## Структура проекта
+## Структура
 
 ```
 ├── main.py          # точка входа
-├── config.py        # конфиг + список команды
-├── fetch_jira.py    # Jira REST API клиент
-├── fetch_gitlab.py  # GitLab REST API клиент
+├── config.py        # конфиг (читает .env + GITLAB_USERNAMES)
+├── fetch_jira.py    # Jira REST API v2
+├── fetch_gitlab.py  # GitLab REST API v4 (агрегат по команде)
 ├── analyze.py       # вычисление метрик
-├── dashboard.py     # генерация HTML
+├── dashboard.py     # генерация HTML из данных
 ├── requirements.txt
 └── .env.example
 ```

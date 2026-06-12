@@ -15,7 +15,7 @@ from pathlib import Path
 from config import Config
 from fetch_jira import JiraClient
 from fetch_gitlab import GitLabClient
-from analyze import member_stats, build_report
+from analyze import build_report
 import dashboard
 
 
@@ -38,72 +38,59 @@ def main():
     jira = JiraClient(cfg)
     gitlab = GitLabClient(cfg)
 
-    # ── helper: discover Jira fields ──────────────────────────────────────────
+    # ── discover Jira fields ──────────────────────────────────────────────────
     if args.find_fields:
         fields = jira._get("/rest/api/2/field")
         print(f"\n{'ID':<30} {'Name'}")
         print("-" * 60)
         for f in sorted(fields, key=lambda x: x.get("name", "")):
-            print(f"{f['id']:<30} {f.get('name','')}")
+            print(f"{f['id']:<30} {f.get('name', '')}")
         return
 
-    # ── validate config ───────────────────────────────────────────────────────
+    # ── validate ──────────────────────────────────────────────────────────────
     errors = []
-    if not cfg.jira_url:
-        errors.append("JIRA_URL not set")
-    if not cfg.jira_token:
-        errors.append("JIRA_TOKEN not set")
-    if not cfg.gitlab_url:
-        errors.append("GITLAB_URL not set")
-    if not cfg.gitlab_token:
-        errors.append("GITLAB_TOKEN not set")
-    if not cfg.members:
+    for var in ("jira_url", "jira_token", "gitlab_url", "gitlab_token"):
+        if not getattr(cfg, var, None):
+            errors.append(f"{var.upper()} not set")
+    if not cfg.gitlab_usernames:
         errors.append(
-            "No team members defined in config.py (TEAM_MEMBERS list is empty). "
-            "Add Member(...) entries."
+            "GITLAB_USERNAMES not set. Add comma-separated usernames to .env, e.g.:\n"
+            "  GITLAB_USERNAMES=ivan.petrov,anna.sidorova"
         )
     if errors:
         print("\n[ERROR] Configuration issues:")
         for e in errors:
             print(f"  • {e}")
-        print("\nSee .env.example and config.py for setup instructions.")
+        print("\nSee .env.example for setup instructions.")
         sys.exit(1)
+
+    print(f"\nTeam: {cfg.jira_team_value or cfg.jira_project}")
+    print(f"GitLab users: {', '.join(cfg.gitlab_usernames)}")
 
     # ── fetch Jira ────────────────────────────────────────────────────────────
     print("\n=== Fetching Jira data ===")
-    epics_q1 = jira.get_epics("q1", cfg.q1_start, cfg.q1_end)
-    epics_q2 = jira.get_epics("q2", cfg.q2_start, cfg.q2_end)
+    epics_q1  = jira.get_epics("q1",  cfg.q1_start, cfg.q1_end)
+    epics_q2  = jira.get_epics("q2",  cfg.q2_start, cfg.q2_end)
     issues_q1 = jira.get_issues("q1", cfg.q1_start, cfg.q1_end)
     issues_q2 = jira.get_issues("q2", cfg.q2_start, cfg.q2_end)
 
     # ── fetch GitLab ──────────────────────────────────────────────────────────
     print("\n=== Fetching GitLab data ===")
-    members_data = []
-    for member in cfg.members:
-        mrs_q1     = gitlab.get_mrs_for_member(member, "q1", cfg.q1_start, cfg.q1_end)
-        commits_q1 = gitlab.get_commits_for_member(member, "q1", cfg.q1_start, cfg.q1_end)
-        mrs_q2     = gitlab.get_mrs_for_member(member, "q2", cfg.q2_start, cfg.q2_end)
-        commits_q2 = gitlab.get_commits_for_member(member, "q2", cfg.q2_start, cfg.q2_end)
+    mrs_q1     = gitlab.get_team_mrs("q1",     cfg.q1_start, cfg.q1_end)
+    commits_q1 = gitlab.get_team_commits("q1", cfg.q1_start, cfg.q1_end)
+    mrs_q2     = gitlab.get_team_mrs("q2",     cfg.q2_start, cfg.q2_end)
+    commits_q2 = gitlab.get_team_commits("q2", cfg.q2_start, cfg.q2_end)
 
-        stats = member_stats(
-            member,
-            mrs_q1, commits_q1,
-            mrs_q2, commits_q2,
-            cfg.q1_start, cfg.q1_end,
-            cfg.q2_start, cfg.q2_end,
-        )
-        # Stash raw data so build_report can aggregate team totals
-        stats["_mrs_q1"] = mrs_q1
-        stats["_mrs_q2"] = mrs_q2
-        stats["_commits_q1"] = commits_q1
-        stats["_commits_q2"] = commits_q2
-        members_data.append(stats)
-
-    # ── build report ──────────────────────────────────────────────────────────
+    # ── build & render ────────────────────────────────────────────────────────
     print("\n=== Computing metrics ===")
-    report = build_report(cfg, epics_q1, epics_q2, issues_q1, issues_q2, members_data)
+    report = build_report(
+        cfg,
+        epics_q1, epics_q2,
+        issues_q1, issues_q2,
+        mrs_q1, mrs_q2,
+        commits_q1, commits_q2,
+    )
 
-    # ── render dashboard ──────────────────────────────────────────────────────
     out = dashboard.render(report, args.output)
     print(f"\n✓ Dashboard written to: {os.path.abspath(out)}")
     print("  Open it in a browser to view.")
